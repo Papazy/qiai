@@ -1,0 +1,7 @@
+{
+  "defaultProvider": "openrouter",
+  "openaiApiKey": "",
+  "geminiApiKey": "",
+  "openrouterApiKey": "",
+  "defaultModel": ""
+}
