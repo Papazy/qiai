@@ -1,6 +1,6 @@
 # QIAI - Terminal Command Assistant
 
-QIAI (Quick Assistant) is a CLI tool that helps you get relevant terminal commands quickly using AI (OpenAI GPT & Google Gemini).
+QIAI (Quick Assistant) is a CLI tool that helps you get relevant terminal commands quickly using AI (OpenAI GPT, Google Gemini, and OpenRouter).
 
 ## Installation
 
@@ -14,11 +14,14 @@ npm install -g qiai
 You need at least one API key to use QIAI:
 
 ```bash
-# Set OpenAI API key (becomes default)
-qiai --set-openai-api-key your-openai-api-key
+# Set OpenRouter API key (Recommended, supports free models!)
+qiai --set-openrouter-api-key your-openrouter-api-key
 
 # Or set Gemini API key (becomes default)
 qiai --set-gemini-api-key your-gemini-api-key
+
+# Or set OpenAI API key (becomes default)
+qiai --set-openai-api-key your-openai-api-key
 ```
 
 ### 2. Ask Questions
@@ -27,8 +30,12 @@ qiai --set-gemini-api-key your-gemini-api-key
 qiai -q "how to list files in directory"
 
 # Force specific provider
-qiai -q "how to install docker" --openai
+qiai -q "how to install docker" --openrouter
 qiai -q "how to install docker" --gemini
+qiai -q "how to install docker" --openai
+
+# Use a specific model on-the-fly
+qiai -q "how to install docker" -m meta-llama/llama-3-8b-instruct:free
 ```
 
 ## Usage
@@ -37,30 +44,42 @@ qiai -q "how to install docker" --gemini
 ```bash
 # Ask any command-related question
 qiai -q "your question"                    # Auto-select provider
-qiai -q "your question" --openai           # Force OpenAI
+qiai -q "your question" --openrouter       # Force OpenRouter
 qiai -q "your question" --gemini           # Force Gemini
+qiai -q "your question" --openai           # Force OpenAI
+
+# Use a custom model on-the-fly (works for any provider)
+qiai -q "your question" -m <model_id>
+
+# Model management
+qiai --list-models                         # List all available models in a beautiful table
+qiai --set-model <model_id>                # Set default model (auto-switches provider!)
 
 # API key management
-qiai --set-openai-api-key your-api-key     # Set OpenAI key
-qiai --set-gemini-api-key your-api-key     # Set Gemini key
+qiai --set-openrouter-api-key your-key     # Set OpenRouter key
+qiai --set-gemini-api-key your-key         # Set Gemini key
+qiai --set-openai-api-key your-key         # Set OpenAI key
 
 # Provider management
-qiai --set-default-provider openai|gemini  # Set default provider
+qiai --set-default-provider <provider>     # Set default provider (openrouter|gemini|openai)
 ```
 
-### Provider Management
-The last API key you set automatically becomes the default provider:
+### Provider & Model Management
+The last API key you set automatically becomes the default provider. However, you can easily switch models and providers:
 
 ```bash
-# Set OpenAI key - becomes default
-qiai --set-openai-api-key your-key
+# List all supported models
+qiai --list-models
 
-# Set Gemini key - becomes default  
-qiai --set-gemini-api-key your-key
+# Set a model (this will automatically switch the default provider to match the model!)
+qiai --set-model google/gemini-2.5-flash:free  # Switches provider to OpenRouter
+qiai --set-model gemini-2.5-flash              # Switches provider to Gemini
+qiai --set-model gpt-4o-mini                   # Switches provider to OpenAI
 
-# Manually override default
-qiai --set-default-provider openai
+# Manually override default provider
+qiai --set-default-provider openrouter
 qiai --set-default-provider gemini
+qiai --set-default-provider openai
 ```
 
 ## Examples
@@ -108,23 +127,29 @@ QIAI returns commands in a structured table format:
 
 ## API Keys Setup
 
-### OpenAI API Key
-1. Go to [OpenAI Platform](https://platform.openai.com/api-keys)
-2. Create a new API key
-3. Set it: `qiai --set-openai-api-key your-key`
+### OpenRouter API Key (Recommended - Free Models!)
+1. Go to [OpenRouter](https://openrouter.ai/) and sign up.
+2. Go to **Keys** and create a new API key.
+3. Set it: `qiai --set-openrouter-api-key your-key`
 
 ### Google Gemini API Key  
 1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
 2. Create a new API key
 3. Set it: `qiai --set-gemini-api-key your-key`
 
+### OpenAI API Key
+1. Go to [OpenAI Platform](https://platform.openai.com/api-keys)
+2. Create a new API key
+3. Set it: `qiai --set-openai-api-key your-key`
+
 ## Features
 
-- **Multi-AI Support**: Works with both OpenAI GPT and Google Gemini
-- **Auto Provider Selection**: Automatically uses available AI provider
-- **OS-Specific**: Provides commands for your operating system (Windows, macOS, Linux)
-- **Smart Responses**: Returns organized commands with safety levels
-- **Token Optimized**: Efficient prompts to reduce API costs
+- **Multi-AI Support**: Works with OpenRouter, Google Gemini, and OpenAI GPT.
+- **Dynamic Model Selection**: Choose from a list of pre-defined models or use any custom model on-the-fly with `-m <model_id>`.
+- **Auto Provider Selection**: Automatically uses available AI provider and switches provider based on your selected model.
+- **OS-Specific**: Provides commands tailored for your operating system (Windows, macOS, Linux).
+- **Smart Responses**: Returns organized commands with safety levels in a beautiful terminal table.
+- **Token Optimized**: Efficient prompts to reduce API costs.
 
 ## Troubleshooting
 
