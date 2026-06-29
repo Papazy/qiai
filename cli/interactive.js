@@ -102,6 +102,8 @@ export async function startInteractiveMode() {
         case 'list-models':
         case 'select-model': {
           const selected = await interactiveModelSelect(rl);
+          // @inquirer/select unrefs stdin after resolving; re-anchor event loop
+          process.stdin.ref();
           if (selected) {
             sessionProvider = selected.provider;
             sessionModel = selected.modelId;
