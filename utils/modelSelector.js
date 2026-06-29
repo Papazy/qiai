@@ -67,13 +67,20 @@ function formatPrice(price) {
   return `$${price.toFixed(3)}`;
 }
 
-function promptApiKey(provider) {
+function promptApiKey(provider, rl = null) {
   return new Promise((resolve) => {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    rl.question(`Enter ${provider.toUpperCase()} API key: `, (answer) => {
-      rl.close();
-      resolve(answer.trim());
-    });
+    if (rl) {
+      rl.resume();
+      rl.question(`Enter ${provider.toUpperCase()} API key: `, (answer) => {
+        resolve(answer.trim());
+      });
+    } else {
+      const tempRl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      tempRl.question(`Enter ${provider.toUpperCase()} API key: `, (answer) => {
+        tempRl.close();
+        resolve(answer.trim());
+      });
+    }
   });
 }
 
@@ -109,7 +116,7 @@ function buildModelChoices(models, provider, isStatic) {
   ];
 }
 
-export async function interactiveModelSelect() {
+export async function interactiveModelSelect(rl = null) {
   const isExitError = (e) => e?.name === 'ExitPromptError' || e?.message?.includes('force closed');
 
   while (true) {
@@ -125,11 +132,11 @@ export async function interactiveModelSelect() {
     try {
       provider = await select({ message: 'Select provider:', choices: providerChoices });
     } catch (e) {
-      if (isExitError(e)) { console.log('\nCancelled.'); return; }
+      if (isExitError(e)) { console.log('\nCancelled.'); return null; }
       throw e;
     }
 
-    if (provider === CANCEL) { console.log('Cancelled.'); return; }
+    if (provider === CANCEL) { console.log('Cancelled.'); return null; }
 
     const apiKey = getApiKey(provider);
     const hasKey = apiKey?.trim();
@@ -174,7 +181,7 @@ export async function interactiveModelSelect() {
         pageSize: 15,
       });
     } catch (e) {
-      if (isExitError(e)) { console.log('\nCancelled.'); return; }
+      if (isExitError(e)) { console.log('\nCancelled.'); return null; }
       throw e;
     }
 
@@ -183,7 +190,7 @@ export async function interactiveModelSelect() {
     let newApiKey = null;
     if (!hasKey) {
       console.log(`\nAPI key for ${provider.toUpperCase()} not set.`);
-      newApiKey = await promptApiKey(provider);
+      newApiKey = await promptApiKey(provider, rl);
       if (!newApiKey) {
         console.log('No API key entered. Model not saved.');
         continue;
@@ -195,6 +202,6 @@ export async function interactiveModelSelect() {
     console.log(`Model    : ${modelId}`);
     if (newApiKey) console.log('API key  : saved');
     console.log('Saved as default.');
-    return;
+    return { provider, modelId };
   }
 }

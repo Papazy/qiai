@@ -9,6 +9,7 @@ function printHelp() {
   console.log('  \x1b[1m\x1b[36mQIAI Interactive Mode\x1b[0m');
   console.log('  ─────────────────────────────────────────────────');
   console.log('  \x1b[33m/help\x1b[0m                   Show this help');
+  console.log('  \x1b[33m/clear\x1b[0m                  Clear terminal');
   console.log('  \x1b[33m/list-models\x1b[0m            Browse & select model');
   console.log('  \x1b[33m/provider <name>\x1b[0m        Switch provider (openai|gemini|openrouter)');
   console.log('  \x1b[33m/model <id>\x1b[0m             Switch model for this session');
@@ -64,6 +65,10 @@ export async function startInteractiveMode() {
           printHelp();
           break;
 
+        case 'clear':
+          process.stdout.write('\x1bc');
+          break;
+
         case 'status': {
           const p = sessionProvider || getAvailableProvider();
           const m = sessionModel || config.defaultModel || '(default)';
@@ -95,9 +100,15 @@ export async function startInteractiveMode() {
         }
 
         case 'list-models':
-        case 'select-model':
-          await interactiveModelSelect();
+        case 'select-model': {
+          const selected = await interactiveModelSelect(rl);
+          if (selected) {
+            sessionProvider = selected.provider;
+            sessionModel = selected.modelId;
+            console.log(`\n  Active: \x1b[36m${selected.provider.toUpperCase()}\x1b[0m / \x1b[36m${selected.modelId}\x1b[0m\n`);
+          }
           break;
+        }
 
         default:
           console.log(`  Unknown command: /${cmd}. Type /help.`);
