@@ -44,8 +44,15 @@ export default class OpenRouterAssistant {
 
     try {
       const response = await this.client.chat.completions.create(completion);
-
-      return parseModelJSON(response.choices[0].message.content);
+      const parsed = parseModelJSON(response.choices[0].message.content);
+      if (response.usage) {
+        parsed.usage = {
+          input: response.usage.prompt_tokens,
+          output: response.usage.completion_tokens,
+          total: response.usage.total_tokens,
+        };
+      }
+      return parsed;
     } catch (error) {
       return modelErrorFallback(modelToUse, error);
     }

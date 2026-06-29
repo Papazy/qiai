@@ -28,4 +28,9 @@ export function displayTableSteps(dataObject) {
   });
 
   console.log(table.toString());
+
+  if (dataObject.usage) {
+    const { input, output, total } = dataObject.usage;
+    console.log(`  \x1b[90mTokens: ${input} in / ${output} out / ${total} total\x1b[0m`);
+  }
 }

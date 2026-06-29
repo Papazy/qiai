@@ -28,8 +28,17 @@ Response:`;
       const result = await modelInstance.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
+      const meta = response.usageMetadata;
 
-      return parseModelJSON(text);
+      const parsed = parseModelJSON(text);
+      if (meta) {
+        parsed.usage = {
+          input: meta.promptTokenCount ?? 0,
+          output: meta.candidatesTokenCount ?? 0,
+          total: meta.totalTokenCount ?? 0,
+        };
+      }
+      return parsed;
 
     } catch (error) {
       return modelErrorFallback(modelToUse, error);
