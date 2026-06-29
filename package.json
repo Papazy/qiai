@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/riparuk/qiai.git"
+    "url": "git+https://github.com/ripabak/qiai.git"
   },
   "keywords": [
     "Ask",
@@ -24,9 +24,9 @@
   "author": "Rifa Faruqi",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/riparuk/qiai/issues"
+    "url": "https://github.com/ripabak/qiai/issues"
   },
-  "homepage": "https://github.com/riparuk/qiai#readme",
+  "homepage": "https://github.com/ripabak/qiai#readme",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@inquirer/select": "^5.2.1",
