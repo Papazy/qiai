@@ -27,110 +27,120 @@ export async function startInteractiveMode() {
   let sessionModel = null;
 
   printHelp();
+  startRepl();
 
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: true,
-    prompt: '\x1b[32m>\x1b[0m ',
-  });
+  function startRepl() {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      terminal: true,
+      prompt: '\x1b[32m>\x1b[0m ',
+    });
 
-  rl.on('close', () => {
-    console.log('\nBye!');
-    process.exit(0);
-  });
+    let suppressClose = false;
 
-  const prompt = () => rl.prompt();
+    rl.on('close', () => {
+      if (!suppressClose) {
+        console.log('\nBye!');
+        process.exit(0);
+      }
+    });
 
-  rl.on('line', async (input) => {
-    rl.pause();
-    input = input.trim();
+    const prompt = () => rl.prompt();
 
-    if (!input) {
-      rl.resume();
-      prompt();
-      return;
-    }
+    rl.on('line', async (input) => {
+      rl.pause();
+      input = input.trim();
 
-    if (input.startsWith('/')) {
-      const [cmd, ...cmdArgs] = input.slice(1).split(/\s+/);
+      if (!input) {
+        rl.resume();
+        prompt();
+        return;
+      }
 
-      switch (cmd.toLowerCase()) {
-        case 'exit':
-        case 'quit':
-          rl.close();
-          return;
+      if (input.startsWith('/')) {
+        const [cmd, ...cmdArgs] = input.slice(1).split(/\s+/);
 
-        case 'help':
-          printHelp();
-          break;
+        switch (cmd.toLowerCase()) {
+          case 'exit':
+          case 'quit':
+            rl.close();
+            return;
 
-        case 'clear':
-          process.stdout.write('\x1bc');
-          break;
+          case 'help':
+            printHelp();
+            break;
 
-        case 'status': {
-          const p = sessionProvider || getAvailableProvider();
-          const m = sessionModel || config.defaultModel || '(default)';
-          console.log(`\n  Provider : \x1b[36m${p.toUpperCase()}\x1b[0m`);
-          console.log(`  Model    : \x1b[36m${m}\x1b[0m\n`);
-          break;
-        }
+          case 'clear':
+            process.stdout.write('\x1bc');
+            break;
 
-        case 'provider': {
-          const p = cmdArgs[0]?.toLowerCase();
-          if (!p || !['openai', 'gemini', 'openrouter'].includes(p)) {
-            console.log('  Usage: /provider openai|gemini|openrouter');
-          } else {
-            sessionProvider = p;
-            console.log(`  Provider set to \x1b[36m${p.toUpperCase()}\x1b[0m for this session.`);
+          case 'status': {
+            const p = sessionProvider || getAvailableProvider();
+            const m = sessionModel || config.defaultModel || '(default)';
+            console.log(`\n  Provider : \x1b[36m${p.toUpperCase()}\x1b[0m`);
+            console.log(`  Model    : \x1b[36m${m}\x1b[0m\n`);
+            break;
           }
-          break;
-        }
 
-        case 'model': {
-          const m = cmdArgs[0];
-          if (!m) {
-            console.log('  Usage: /model <model-id>');
-          } else {
-            sessionModel = m;
-            console.log(`  Model set to \x1b[36m${m}\x1b[0m for this session.`);
+          case 'provider': {
+            const p = cmdArgs[0]?.toLowerCase();
+            if (!p || !['openai', 'gemini', 'openrouter'].includes(p)) {
+              console.log('  Usage: /provider openai|gemini|openrouter');
+            } else {
+              sessionProvider = p;
+              console.log(`  Provider set to \x1b[36m${p.toUpperCase()}\x1b[0m for this session.`);
+            }
+            break;
           }
-          break;
-        }
 
-        case 'list-models':
-        case 'select-model': {
-          const selected = await interactiveModelSelect(rl);
-          // @inquirer/select unrefs stdin after resolving; re-anchor event loop
-          process.stdin.ref();
-          if (selected) {
-            sessionProvider = selected.provider;
-            sessionModel = selected.modelId;
-            console.log(`\n  Active: \x1b[36m${selected.provider.toUpperCase()}\x1b[0m / \x1b[36m${selected.modelId}\x1b[0m\n`);
+          case 'model': {
+            const m = cmdArgs[0];
+            if (!m) {
+              console.log('  Usage: /model <model-id>');
+            } else {
+              sessionModel = m;
+              console.log(`  Model set to \x1b[36m${m}\x1b[0m for this session.`);
+            }
+            break;
           }
-          break;
+
+          case 'list-models':
+          case 'select-model': {
+            const selected = await interactiveModelSelect();
+            // Inquirer strips process.stdin listeners on cleanup — rl is deaf after this.
+            // Suppress the close→exit handler, destroy old rl, spawn fresh one.
+            suppressClose = true;
+            rl.close();
+            if (selected) {
+              sessionProvider = selected.provider;
+              sessionModel = selected.modelId;
+              console.log(`\n  Active: \x1b[36m${selected.provider.toUpperCase()}\x1b[0m / \x1b[36m${selected.modelId}\x1b[0m\n`);
+            }
+            setImmediate(startRepl);
+            return;
+          }
+
+          default:
+            console.log(`  Unknown command: /${cmd}. Type /help.`);
         }
 
-        default:
-          console.log(`  Unknown command: /${cmd}. Type /help.`);
+        rl.resume();
+        prompt();
+        return;
+      }
+
+      try {
+        const provider = sessionProvider || getAvailableProvider();
+        displayTableSteps(await getResponse(provider, input, sessionModel));
+      } catch (err) {
+        console.error(`\n  Error: ${err.message}`);
       }
 
       rl.resume();
       prompt();
-      return;
-    }
+    });
 
-    try {
-      const provider = sessionProvider || getAvailableProvider();
-      displayTableSteps(await getResponse(provider, input, sessionModel));
-    } catch (err) {
-      console.error(`\n  Error: ${err.message}`);
-    }
-
-    rl.resume();
     prompt();
-  });
-
-  prompt();
+  }
 }
